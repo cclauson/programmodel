@@ -1,0 +1,2 @@
+/home/cclauson/networkspace/MySoln/ProgramModel/obj/x86/Debug/.NETFramework,Version=v4.5.AssemblyAttribute.cs
+/home/cclauson/networkspace/MySoln/ProgramModel/bin/Debug/System.Collections.Immutable.dll
