@@ -2,6 +2,15 @@
 
 namespace ProgramModel
 {
+	/// <summary>
+	/// Either object, as is found in many programming
+	/// languages and libraries.
+	/// 
+	/// The Either class has two type parameters, T1 and T2.
+	/// Each Either instance is either a left either or a
+	/// right Either.  If left, then it can be converted
+	/// to a T1, otherwise it can be converted to a T2.
+	/// </summary>
 	public struct Either<T1, T2>
 		where T1 : class
 		where T2 : class
@@ -10,6 +19,11 @@ namespace ProgramModel
 		private readonly T1 v1;
 		private readonly T2 v2;
 
+		/// <summary>
+		/// If this is a left instance, then convert to a
+		/// T1.
+		/// </summary>
+		/// <value>The value of this Either as a T1.</value>
 		public T1 Left
 		{
 			get
@@ -22,6 +36,11 @@ namespace ProgramModel
 			}
 		}
 
+		/// <summary>
+		/// If this is a Right instance, then convert to a
+		/// T2.
+		/// </summary>
+		/// <value>The value of this Either as a T2.</value>
 		public T2 Right
 		{
 			get
@@ -40,6 +59,12 @@ namespace ProgramModel
 			this.v2 = arg2;
 		}
 
+		/// <summary>
+		/// Construct a new left Either object.
+		/// </summary>
+		/// <param name="arg">T1 object to which this either can be converted.</param>
+		/// <typeparam name="T1">Type to which this instance can be converted.</typeparam>
+		/// <typeparam name="T2">Type to which this instance would be convertible if it were a right instance, which it is not.</typeparam>
 		public static Either<T1, T2> left<T1, T2>(T1 arg)
 			where T1 : class
 			where T2 : class
@@ -50,6 +75,12 @@ namespace ProgramModel
 			return new Either<T1, T2>(arg, null);
 		}
 
+		/// <summary>
+		/// Construct a new right Either object.
+		/// </summary>
+		/// <param name="arg">T2 object to which this either can be converted.</param>
+		/// <typeparam name="T1">Type to which this instance would be convertible if it were a left instance, which it is not.</typeparam>
+		/// <typeparam name="T2">Type to which this instance can be converted.</typeparam>
 		public static Either<T1, T2> right<T1, T2>(T2 arg)
 			where T1 : class
 			where T2 : class
@@ -60,12 +91,20 @@ namespace ProgramModel
 			return new Either<T1, T2>(null, arg);
 		}
 
-		public bool isFirst()
+		/// <summary>
+		/// True iff this object is a left instance.
+		/// </summary>
+		/// <returns><c>true</c>, if this instance is convertible to T1 with Left() <c>false</c> otherwise.</returns>
+		public bool isLeft()
 		{
 			return v1 != null;
 		}
 
-		public bool isSecond()
+		/// <summary>
+		/// True iff this object is a right instance.
+		/// </summary>
+		/// <returns><c>true</c>, if this instance is convertible to T2 with Right() <c>false</c> otherwise.</returns>
+		public bool isRight()
 		{
 			return v2 != null;
 		}

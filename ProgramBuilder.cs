@@ -123,7 +123,7 @@ namespace ProgramModel
 				this.enclosingLoop = enclosingLoop;
 			}
 
-			public void addAssignment(AssignmentT assignment)
+			public override void addAssignment(AssignmentT assignment)
 			{
 				contents.Add (Either<AssignmentT, CodeBlockNonAssignment>
 					.left<AssignmentT, CodeBlockNonAssignment>(assignment));
@@ -135,28 +135,28 @@ namespace ProgramModel
 					.right<AssignmentT, CodeBlockNonAssignment>(nonAssignment));
 			}
 
-			public CodeBlock<AssignmentT, ConditionT> addIf(ConditionT condition)
+			public override CodeBlock<AssignmentT, ConditionT> addIf(ConditionT condition)
 			{
 				If iif = new If (condition, this);
 				addNonAssignment (iif);
 				return iif.codeBlock;
 			}
 
-			public Tuple<CodeBlock<AssignmentT, ConditionT>, CodeBlock<AssignmentT, ConditionT>> addIfElse(ConditionT condition)
+			public override Tuple<CodeBlock<AssignmentT, ConditionT>, CodeBlock<AssignmentT, ConditionT>> addIfElse(ConditionT condition)
 			{
 				IfElse ifElse = new IfElse (condition, this);
 				addNonAssignment (ifElse);
 				return new Tuple<CodeBlock<AssignmentT, ConditionT>, CodeBlock<AssignmentT, ConditionT>> (ifElse.codeBlock, ifElse.elseCodeBlock);
 			}
 
-			public Tuple<CodeBlock<AssignmentT, ConditionT>, Loop> addWhile(ConditionT condition)
+			public override Tuple<CodeBlock<AssignmentT, ConditionT>, Loop> addWhile(ConditionT condition)
 			{
 				While whiile = new While (condition, this);
 				addNonAssignment (whiile);
 				return new Tuple<CodeBlock<AssignmentT, ConditionT>, Loop> (whiile.codeBlock, whiile);
 			}
 
-			public Tuple<CodeBlock<AssignmentT, ConditionT>, Loop> addDoWhile(ConditionT condition)
+			public override Tuple<CodeBlock<AssignmentT, ConditionT>, Loop> addDoWhile(ConditionT condition)
 			{
 				DoWhile doWhile = new DoWhile (condition, this);
 				addNonAssignment (doWhile);
@@ -181,7 +181,7 @@ namespace ProgramModel
 				throw new ArgumentException ("loop is not enclosing loop of this block");
 			}
 
-			public void addContinue ()
+			public override void addContinue ()
 			{
 				Loop nearestEnclosingLoop = getNearestEnclosingLoop ();
 				if (nearestEnclosingLoop == null)
@@ -190,13 +190,13 @@ namespace ProgramModel
 					addContinue (nearestEnclosingLoop);
 			}
 
-			public void addContinue(Loop loop)
+			public override void addContinue(Loop loop)
 			{
 				checkLoopIsEnclosing (loop);
 				addNonAssignment (new Continue (loop));
 			}
 
-			public void addBreak()
+			public override void addBreak()
 			{
 				Loop nearestEnclosingLoop = getNearestEnclosingLoop ();
 				if (nearestEnclosingLoop == null)
@@ -205,13 +205,13 @@ namespace ProgramModel
 					addBreak (nearestEnclosingLoop);
 			}
 
-			public void addBreak (Loop loop)
+			public override void addBreak (Loop loop)
 			{
 				checkLoopIsEnclosing (loop);
 				addNonAssignment (new Break (loop));
 			}
 
-			public void addReturn()
+			public override void addReturn()
 			{
 				addNonAssignment (RETURN);
 			}
