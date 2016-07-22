@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 namespace ProgramModel
 {
 
-	public partial class ProgramBuilder<AssignmentT, ConditionT>
+	public partial class ProgramBuilder<MutationT, ConditionT>
 	{
 
 		private interface ProgramNode {}
@@ -16,12 +16,12 @@ namespace ProgramModel
 
 		private class BasicBlock : ProgramNode
 		{
-			public readonly IList<AssignmentT> assignments;
+			public readonly IList<MutationT> assignments;
 			public ProgramNode coda;
 
 			public BasicBlock()
 			{
-				this.assignments = new List<AssignmentT>();
+				this.assignments = new List<MutationT>();
 				this.coda = null;
 			}
 
@@ -123,12 +123,12 @@ namespace ProgramModel
 			ProgramNode initial = null;
 			Either<BasicBlock, ProgramSubgraph> curr = null;
 
-			foreach (Either<AssignmentT, CodeBlockNonAssignment> el in cb.contents)
+			foreach (Either<MutationT, CodeBlockNonAssignment> el in cb.contents)
 			{
 				if (el.isLeft())
 				{
 					//we need to process an assignment
-					AssignmentT assignment = el.Left ();
+					MutationT assignment = el.Left ();
 					BasicBlock bb;
 
 					//if first loop iteration, initialize initial and curr

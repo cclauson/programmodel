@@ -32,7 +32,6 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Compile Include="Either.cs" />
-    <Compile Include="ProgramBuilder.cs" />
     <Compile Include="ProgramGen.cs" />
     <Compile Include="CodeBlock.cs" />
     <Compile Include="Loop.cs" />
