@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System;-
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -116,6 +116,33 @@ namespace ProgramModel
 
 		}
 
+		private class UnlessProgramSubgraph : ProgramSubgraph
+		{
+
+			private readonly BranchBlock branchBlock;
+			private readonly ProgramSubgraph programSubgraph;
+
+			public IfProgramSubgraph(BranchBlock branchBlock, ProgramSubgraph programSubgraph)
+			{
+				this.branchBlock = branchBlock;
+				this.programSubgraph = programSubgraph;
+			}
+
+			public override ProgramNode GetEntryPoint()
+			{
+				return branchBlock;
+			}
+
+			void SetExitDest(ProgramNode programNode)
+			{
+				//like if, but block executed on negative
+				branchBlock.trueDest = programNode;
+				programSubgraph.SetExitDest (programNode);
+			}
+
+		}
+
+
 		private ProgramSubgraph processCodeBlock(CodeBlockImpl cb)
 		{
 			//initial and curr are either both null or neither null,
@@ -159,6 +186,28 @@ namespace ProgramModel
 
 					} else if (elr is Break) {
 
+					} else if (elr is IfElse) {
+						IfElse ifElse = (IfElse) elr;
+						ProgramSubgraph ps1 = processCodeBlock(ifElse.codeBlock);
+						ProgramSubgraph ps2 = processCodeBlock(ifElse.elseCodeBlock);
+						if (ps1 == null && ps2 == null) {
+							//ignore if both bodies are empty
+							continue;
+						} else if (ps1 == null) {
+							//if first body is empty then we model it as "unless"
+							BranchBlock branchBlock = new BranchBlock (iif.condition);
+							branchBlock.falseDest = ps2.GetEntryPoint ();
+							//TODO: Don't return here
+							return new IfProgramSubgraph (branchBlock, ps);
+						} else if (ps2 == null) {
+							//if second body is empty then it's effectively an if block
+							BranchBlock branchBlock = new BranchBlock (iif.condition);
+							branchBlock.trueDest = ps1.GetEntryPoint ();
+							//TODO: Don't return here
+							return new IfProgramSubgraph (branchBlock, ps);
+						} else {
+
+						}
 					} else if (elr is If) {
 						If iif = (If) elr;
 						ProgramSubgraph ps = processCodeBlock(iif.codeBlock);
@@ -168,12 +217,8 @@ namespace ProgramModel
 						}
 						BranchBlock branchBlock = new BranchBlock (iif.condition);
 						branchBlock.trueDest = ps.GetEntryPoint ();
+						//TODO: Don't return here
 						return new IfProgramSubgraph (branchBlock, ps);
-					} else if (elr is IfElse) {
-						//TO FIX: Never gets here, actually, since if-else is a
-						//subtype of if!!!
-						IfElse ifElse = (IfElse) elr;
-						ProgramSubgraph ps = processCodeBlock(iif.codeBlock);
 					} else if (elr is While) {
 
 					} else if (elr is DoWhile) {
