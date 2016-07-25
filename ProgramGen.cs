@@ -1,11 +1,11 @@
-﻿using System;-
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace ProgramModel
 {
 
-	public partial class ProgramBuilder<MutationT, ConditionT>
+	public partial class CodeBlock<MutationT, ConditionT>
 	{
 
 		private interface ProgramNode {}
@@ -36,7 +36,7 @@ namespace ProgramModel
 			public BranchBlock(ConditionT condition)
 			{
 				this.condition = condition;
-				this.trueCoda = this.falseCoda = null;
+				this.trueDest = this.falseDest = null;
 			}
 		}
 
@@ -63,7 +63,7 @@ namespace ProgramModel
 		{
 
 			private readonly ProgramNode initial;
-			private readonly Either<BasicBlock, ProgramSubgraph> final;
+			private readonly Nullable<Either<BasicBlock, ProgramSubgraph>> final;
 
 			public BasicBlockProgramSubgraph(ProgramNode initial, Either<BasicBlock, ProgramSubgraph> final)
 			{
@@ -71,18 +71,19 @@ namespace ProgramModel
 				this.final = final;
 			}
 
-			public override ProgramNode GetEntryPoint()
+			public ProgramNode GetEntryPoint()
 			{
 				return initial;
 			}
 
-			void SetExitDest(ProgramNode programNode)
+			public void SetExitDest(ProgramNode programNode)
 			{
 				if (final != null) {
-					if (final.isLeft ()) {
-						final.Left ().coda = programNode;
+					Either<BasicBlock, ProgramSubgraph> f = final.Value;
+					if (f.isLeft ()) {
+						f.Left.coda = programNode;
 					} else {
-						final.Right ().SetExitDest (programNode);
+						f.Right.SetExitDest (programNode);
 					}
 				}
 			}
@@ -100,12 +101,12 @@ namespace ProgramModel
 				this.programSubgraph = programSubgraph;
 			}
 
-			public override ProgramNode GetEntryPoint()
+			public ProgramNode GetEntryPoint()
 			{
 				return branchBlock;
 			}
 
-			void SetExitDest(ProgramNode programNode)
+			public void SetExitDest(ProgramNode programNode)
 			{
 				//for an if, the following block is gone to
 				//if the condition is false, and unconditionally
@@ -122,18 +123,18 @@ namespace ProgramModel
 			private readonly BranchBlock branchBlock;
 			private readonly ProgramSubgraph programSubgraph;
 
-			public IfProgramSubgraph(BranchBlock branchBlock, ProgramSubgraph programSubgraph)
+			public UnlessProgramSubgraph(BranchBlock branchBlock, ProgramSubgraph programSubgraph)
 			{
 				this.branchBlock = branchBlock;
 				this.programSubgraph = programSubgraph;
 			}
 
-			public override ProgramNode GetEntryPoint()
+			public ProgramNode GetEntryPoint()
 			{
 				return branchBlock;
 			}
 
-			void SetExitDest(ProgramNode programNode)
+			public void SetExitDest(ProgramNode programNode)
 			{
 				//like if, but block executed on negative
 				branchBlock.trueDest = programNode;
@@ -143,7 +144,7 @@ namespace ProgramModel
 		}
 
 
-		private ProgramSubgraph processCodeBlock(CodeBlockImpl cb)
+		private ProgramSubgraph processCodeBlock(CodeBlock<MutationT, ConditionT> cb)
 		{
 			//initial and curr are either both null or neither null,
 			//both null only on first loop iteration
@@ -167,16 +168,16 @@ namespace ProgramModel
 					}
 
 					if (curr.isLeft()) {
-						bb = curr.Left ();
+						bb = curr.Left;
 						curr = Either<BasicBlock, ProgramSubgraph>.left (bb);
 					} else {
 						bb = new BasicBlock ();
-						curr.Right ().SetExitDest (bb);
+						curr.Right.SetExitDest (bb);
 						curr = Either<BasicBlock, ProgramSubgraph>.left (bb);
 					}
 					bb.assignments.Add (assignment);
 				} else {
-					CodeBlockNonAssignment elr = el.Right ();
+					CodeBlockNonAssignment elr = el.Right;
 					if (elr is Return) {
 						if (initial == null) {
 							initial = PROGRAM_RETURN;
@@ -195,16 +196,16 @@ namespace ProgramModel
 							continue;
 						} else if (ps1 == null) {
 							//if first body is empty then we model it as "unless"
-							BranchBlock branchBlock = new BranchBlock (iif.condition);
+							BranchBlock branchBlock = new BranchBlock (ifElse.condition);
 							branchBlock.falseDest = ps2.GetEntryPoint ();
 							//TODO: Don't return here
-							return new IfProgramSubgraph (branchBlock, ps);
+							return new UnlessProgramSubgraph (branchBlock, ps1);
 						} else if (ps2 == null) {
 							//if second body is empty then it's effectively an if block
-							BranchBlock branchBlock = new BranchBlock (iif.condition);
+							BranchBlock branchBlock = new BranchBlock (ifElse.condition);
 							branchBlock.trueDest = ps1.GetEntryPoint ();
 							//TODO: Don't return here
-							return new IfProgramSubgraph (branchBlock, ps);
+							return new IfProgramSubgraph (branchBlock, ps1);
 						} else {
 
 						}
@@ -232,12 +233,7 @@ namespace ProgramModel
 
 		private ProgramImpl ToProgram()
 		{
-
-		}
-
-		static void Main()
-		{
-			System.Console.WriteLine ("Hello");
+			return null;
 		}
 
 	}

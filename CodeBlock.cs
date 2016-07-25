@@ -38,7 +38,9 @@ namespace ProgramModel
 	/// which can have control structures with CodeBlocks below
 	/// them, etc.
 	/// </summary>
-	public class CodeBlock<MutationT, ConditionT>
+	public partial class CodeBlock<MutationT, ConditionT>
+		where MutationT : class
+		where ConditionT : class
 	{
 
 		//sequence of contents in this code block

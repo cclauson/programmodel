@@ -35,6 +35,7 @@
     <Compile Include="ProgramGen.cs" />
     <Compile Include="CodeBlock.cs" />
     <Compile Include="Loop.cs" />
+    <Compile Include="TestMain.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Immutable">
