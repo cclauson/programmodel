@@ -143,46 +143,74 @@ namespace ProgramModel
 
 		}
 
-
-		private ProgramSubgraph processCodeBlock(CodeBlock<MutationT, ConditionT> cb)
+		//while building our program graph by recursively descending
+		//code blocks, we need to track the top level node, also
+		//the exit points.  We create a type here that tracks
+		//this state
+		private class ProgramGraphBuilder
 		{
 			//initial and curr are either both null or neither null,
 			//both null only on first loop iteration
-			ProgramNode initial = null;
-			Either<BasicBlock, ProgramSubgraph> curr = null;
+			private ProgramNode initial = null;
+			private Nullable<Either<BasicBlock, ProgramSubgraph>> curr = null;
+
+			public ProgramGraphBuilder() {}
+			
+			public void addMutation(MutationT mutation) {
+				BasicBlock bb;
+
+				//if first loop iteration, initialize initial and curr
+				//to non-null values
+				if (initial == null) {
+					bb = new BasicBlock ();
+					initial = bb;
+					curr = Either<CodeBlock<MutationT, ConditionT>.BasicBlock, ProgramSubgraph>
+						.left<CodeBlock<MutationT, ConditionT>.BasicBlock, ProgramSubgraph> (bb);
+				}
+
+				if (curr.Value.isLeft()) {
+					bb = curr.Value.Left;
+					curr = Either<BasicBlock, ProgramSubgraph>
+						.left<CodeBlock<MutationT, ConditionT>.BasicBlock, ProgramSubgraph>(bb);
+				} else {
+					bb = new BasicBlock ();
+					curr.Value.Right.SetExitDest (bb);
+					curr = Either<BasicBlock, ProgramSubgraph>
+						.left<CodeBlock<MutationT, ConditionT>.BasicBlock, ProgramSubgraph>(bb);
+				}
+				bb.assignments.Add (mutation);
+			}
+
+			public void processReturn()
+			{
+				if (initial == null) {
+					initial = PROGRAM_RETURN;
+				}
+				//return new BasicBlockProgramSubgraph (initial, null);
+				//return null;
+			}
+
+
+		}
+
+		private static ProgramSubgraph processCodeBlock(CodeBlock<MutationT, ConditionT> cb)
+		{
+
+			ProgramGraphBuilder pgb = new ProgramGraphBuilder ();
 
 			foreach (Either<MutationT, CodeBlockNonAssignment> el in cb.contents)
 			{
 				if (el.isLeft())
 				{
 					//we need to process an assignment
-					MutationT assignment = el.Left ();
-					BasicBlock bb;
-
-					//if first loop iteration, initialize initial and curr
-					//to non-null values
-					if (initial == null) {
-						bb = new BasicBlock ();
-						initial = bb;
-						curr = Either<BasicBlock, ProgramSubgraph>.left (bb);
-					}
-
-					if (curr.isLeft()) {
-						bb = curr.Left;
-						curr = Either<BasicBlock, ProgramSubgraph>.left (bb);
-					} else {
-						bb = new BasicBlock ();
-						curr.Right.SetExitDest (bb);
-						curr = Either<BasicBlock, ProgramSubgraph>.left (bb);
-					}
-					bb.assignments.Add (assignment);
+					MutationT mutation = el.Left;
+					pgb.addMutation (mutation);
 				} else {
+					//something that's not an assignment
 					CodeBlockNonAssignment elr = el.Right;
 					if (elr is Return) {
-						if (initial == null) {
-							initial = PROGRAM_RETURN;
-						}
-						return new BasicBlockProgramSubgraph (initial, null);
+						pgb.processReturn ();
+						//TODO: We actually want to return from the method here
 					} else if (elr is Continue) {
 
 					} else if (elr is Break) {
@@ -229,6 +257,7 @@ namespace ProgramModel
 					}
 				}
 			}
+			return null;
 		}
 
 		private ProgramImpl ToProgram()
