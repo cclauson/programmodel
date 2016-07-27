@@ -122,6 +122,27 @@ namespace ProgramModel
 		/// Appends a while structure to the end of this CodeBlock, which uses the given
 		/// condition as the loop condition.
 		/// 
+		/// This method returns a CodeBlock which can be used
+		/// to define the code contained in this while loop.
+		/// </summary>
+		/// <returns>A CodeBlock which defines the code protected by the loop.</returns>
+		/// <param name="condition">Condition to check to decide whether or not to loop.</param>
+		public CodeBlock<MutationT, ConditionT> addWhile(ConditionT condition)
+		{
+			While whiile = new While (condition, this);
+			addNonAssignment (whiile);
+			return whiile.codeBlock;
+		}
+
+		/// <summary>
+		/// Appends a while structure to the end of this CodeBlock, which uses the given
+		/// condition as the loop condition and internally uses the given name to name
+		/// the loop.
+		/// 
+		/// Note that the name given to the loop does not have any impact on the behavior
+		/// of the function, but is useful in debugging.  For this reason it may be advisable
+		/// to use unique names for unique loops.
+		/// 
 		/// This method returns a (CodeBlock, Loop) pair.  The CodeBlock handle can be used
 		/// to define the code contained in this while loop, the Loop object can be used as
 		/// a target for "break" and "continue" statements in the contained code block, or
@@ -130,7 +151,8 @@ namespace ProgramModel
 		/// <returns>A CodeBlock/Loop pair, the CodeBlock defines the code protected by the
 		/// loop, the Loop object can be used as a target for continue/break.</returns>
 		/// <param name="condition">Condition to check to decide whether or not to loop.</param>
-		public Tuple<CodeBlock<MutationT, ConditionT>, Loop> addWhile(ConditionT condition)
+		/// <param name="labelName">A string denoting the loop, used only in debugging, otherwise meaningless</param>
+		public Tuple<CodeBlock<MutationT, ConditionT>, Loop> addWhile(ConditionT condition, String labelName)
 		{
 			While whiile = new While (condition, this);
 			addNonAssignment (whiile);
@@ -141,6 +163,27 @@ namespace ProgramModel
 		/// Appends a do-while structure to the end of this CodeBlock, which uses the given
 		/// condition as the loop condition.
 		/// 
+		/// This method returns a CodeBlock which can be used
+		/// to define the code contained in this do-while loop.
+		/// </summary>
+		/// <returns>A CodeBlock which defines the code protected by the loop.</returns>
+		/// <param name="condition">Condition to check to decide whether or not to loop.</param>
+		public CodeBlock<MutationT, ConditionT> addDoWhile(ConditionT condition)
+		{
+			DoWhile doWhile = new DoWhile (condition, this);
+			addNonAssignment (doWhile);
+			return doWhile.codeBlock;
+		}
+
+		/// <summary>
+		/// Appends a do-while structure to the end of this CodeBlock, which uses the given
+		/// condition as the loop condition and internally uses the given name to name
+		/// the loop.
+		/// 
+		/// Note that the name given to the loop does not have any impact on the behavior
+		/// of the function, but is useful in debugging.  For this reason it may be advisable
+		/// to use unique names for unique loops.
+		/// 
 		/// This method returns a (CodeBlock, Loop) pair.  The CodeBlock handle can be used
 		/// to define the code contained in this do-while loop, the Loop object can be used as
 		/// a target for "break" and "continue" statements in the contained code block, or
@@ -149,7 +192,8 @@ namespace ProgramModel
 		/// <returns>A CodeBlock/Loop pair, the CodeBlock defines the code protected by the
 		/// loop, the Loop object can be used as a target for continue/break.</returns>
 		/// <param name="condition">Condition to check to decide whether or not to loop.</param>
-		public Tuple<CodeBlock<MutationT, ConditionT>, Loop> addDoWhile(ConditionT condition)
+		/// <param name="labelName">A string denoting the loop, used only in debugging, otherwise meaningless</param>
+		public Tuple<CodeBlock<MutationT, ConditionT>, Loop> addDoWhile(ConditionT condition, String labelName)
 		{
 			DoWhile doWhile = new DoWhile (condition, this);
 			addNonAssignment (doWhile);
@@ -303,17 +347,20 @@ namespace ProgramModel
 
 		private abstract class WhileDoWhileBase : IfWhileDoWhileBase, Loop
 		{
-			public WhileDoWhileBase(ConditionT condition, CodeBlock<MutationT, ConditionT> parent) : base(condition, parent, true) {}
+			public readonly String label;
+			public WhileDoWhileBase(ConditionT condition, CodeBlock<MutationT, ConditionT> parent, string label) : base(condition, parent, true) {
+				this.label = label;
+			}
 		}
 
 		private class While : WhileDoWhileBase
 		{
-			public While(ConditionT condition, CodeBlock<MutationT, ConditionT> parent) : base(condition, parent) {}
+			public While(ConditionT condition, CodeBlock<MutationT, ConditionT> parent, string label = null) : base(condition, parent, label) {}
 		}
 
 		private class DoWhile : WhileDoWhileBase
 		{
-			public DoWhile(ConditionT condition, CodeBlock<MutationT, ConditionT> parent) : base(condition, parent) {}
+			public DoWhile(ConditionT condition, CodeBlock<MutationT, ConditionT> parent, string label = null) : base(condition, parent, label) {}
 		}
 
 	}

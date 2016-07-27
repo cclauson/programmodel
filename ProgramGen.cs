@@ -59,92 +59,23 @@ namespace ProgramModel
 			void SetExitDest(ProgramNode programNode);
 		}
 
-		/*
-		private class BasicBlockProgramSubgraph : ProgramSubgraph
+		//for information associated with a loop
+		//specifically, we need a reference to
+		//the branching node associated with the
+		//loop (for continue), and we also include
+		//a mutable set that can be used to set
+		//a destination node for anything breaking
+		//from the loop (for break)
+		private class LoopRecord
 		{
+			public readonly BranchBlock branchBlock;
+			public readonly HashSet<Action<ProgramNode>> breakDestinationSetters;
 
-			private readonly ProgramNode initial;
-			private readonly Nullable<Either<BasicBlock, ProgramSubgraph>> final;
-
-			public BasicBlockProgramSubgraph(ProgramNode initial, Either<BasicBlock, ProgramSubgraph> final)
-			{
-				this.initial = initial;
-				this.final = final;
-			}
-
-			public ProgramNode GetEntryPoint()
-			{
-				return initial;
-			}
-
-			public void SetExitDest(ProgramNode programNode)
-			{
-				if (final != null) {
-					Either<BasicBlock, ProgramSubgraph> f = final.Value;
-					if (f.isLeft ()) {
-						f.Left.coda = programNode;
-					} else {
-						f.Right.SetExitDest (programNode);
-					}
-				}
-			}
-		}
-
-		private class IfProgramSubgraph : ProgramSubgraph
-		{
-
-			private readonly BranchBlock branchBlock;
-			private readonly ProgramSubgraph programSubgraph;
-
-			public IfProgramSubgraph(BranchBlock branchBlock, ProgramSubgraph programSubgraph)
-			{
+			public LoopRecord(BranchBlock branchBlock) {
 				this.branchBlock = branchBlock;
-				this.programSubgraph = programSubgraph;
+				this.breakDestinationSetters = new HashSet<Action<ProgramNode>>();
 			}
-
-			public ProgramNode GetEntryPoint()
-			{
-				return branchBlock;
-			}
-
-			public void SetExitDest(ProgramNode programNode)
-			{
-				//for an if, the following block is gone to
-				//if the condition is false, and unconditionally
-				//after executing the contained code
-				branchBlock.falseDest = programNode;
-				programSubgraph.SetExitDest (programNode);
-			}
-
 		}
-
-		private class UnlessProgramSubgraph : ProgramSubgraph
-		{
-
-			private readonly BranchBlock branchBlock;
-			private readonly ProgramSubgraph programSubgraph;
-
-			public UnlessProgramSubgraph(BranchBlock branchBlock, ProgramSubgraph programSubgraph)
-			{
-				this.branchBlock = branchBlock;
-				this.programSubgraph = programSubgraph;
-			}
-
-			public ProgramNode GetEntryPoint()
-			{
-				return branchBlock;
-			}
-
-			public void SetExitDest(ProgramNode programNode)
-			{
-				//like if, but block executed on negative
-				branchBlock.trueDest = programNode;
-				programSubgraph.SetExitDest (programNode);
-			}
-
-		}
-		*/
-
 
 		//while building our program graph by recursively descending
 		//code blocks, we need to track the top level node, also
@@ -184,8 +115,8 @@ namespace ProgramModel
 
 			//put in subroutine because there are two
 			//cases in which this needs to happen
-			private void handleIf(If iif) {
-				ProgramSubgraph ps = processCodeBlock(iif.codeBlock);
+			private void handleIf(If iif, Dictionary<Loop, LoopRecord> loopLabelMap) {
+				ProgramSubgraph ps = processCodeBlock(iif.codeBlock, loopLabelMap);
 				if (ps == null) {
 					//if empty body, we just ignore the if
 					return;
@@ -199,7 +130,7 @@ namespace ProgramModel
 				});
 			}
 
-			public void buildFromCodeBlock(CodeBlock<MutationT, ConditionT> cb)
+			public void buildFromCodeBlock(CodeBlock<MutationT, ConditionT> cb, Dictionary<Loop, LoopRecord> loopLabelMap)
 			{
 				foreach (Either<MutationT, CodeBlockNonAssignment> el in cb.contents)
 				{
@@ -225,19 +156,50 @@ namespace ProgramModel
 							//once we hit a return all code afterwards
 							//can be ignored, so stop processing
 							return;
-						} else if (elr is Continue) {
-							//TODO: Handle this case, and return
-						} else if (elr is Break) {
-							//TODO: Handle this case, and return
+						} else if (elr is ContinueBreakBase) {
+							ContinueBreakBase continueOrBreak = (ContinueBreakBase)elr;
+							if (loopLabelMap.ContainsKey (continueOrBreak.loop)) {
+								LoopRecord loopRecord = loopLabelMap[continueOrBreak.loop];
+								if (elr is Continue) {
+									//in continue case we just go directly to the
+									//branch node
+									setNextProgramNode(loopRecord.branchBlock, delegate(ProgramNode obj) {
+										//nothing can follow a continue, do nothing
+									});
+								} else if (elr is Break) {
+									loopRecord.breakDestinationSetters.Add (delegate(ProgramNode programNode) {
+										//this is what is called once we have a node to break to
+										setNextProgramNode(programNode, delegate(ProgramNode programNode2) {
+											//nothing can follow a break, do nothing
+										});
+									});
+								} else {
+									throw new ArgumentException ("Unknown continue/break subtype");
+								}
+								//if continue or break occurs in a basic block,
+								//we just ignore the rest of the contents;
+								//they're unreachable
+								return;
+							} else {
+								String continueOrBreakStr;
+								if (elr is Continue) {
+									continueOrBreakStr = "continue";
+								} else if (elr is Break) {
+									continueOrBreakStr = "break";
+								} else {
+									throw new ArgumentException ("Unknown continue/break subtype");
+								}
+								throw new ArgumentException ("Invalid loop target found for " + continueOrBreakStr);
+							}
 						} else if (elr is IfElse) {
 							IfElse ifElse = (IfElse) elr;
-							ProgramSubgraph ps2 = processCodeBlock(ifElse.elseCodeBlock);
+							ProgramSubgraph ps2 = processCodeBlock(ifElse.elseCodeBlock, loopLabelMap);
 							if (ps2 == null) {
 								//if second block is empty, then it's
 								//basically an if
-								handleIf (ifElse);
+								handleIf (ifElse, loopLabelMap);
 							} else {
-								ProgramSubgraph ps1 = processCodeBlock(ifElse.codeBlock);
+								ProgramSubgraph ps1 = processCodeBlock(ifElse.codeBlock, loopLabelMap);
 								BranchBlock branchBlock = new BranchBlock (ifElse.condition);
 								if (ps1 == null) {
 									//first code block is empty, this is where if-else
@@ -259,11 +221,18 @@ namespace ProgramModel
 							}
 						} else if (elr is If) {
 							If iif = (If) elr;
-							handleIf (iif);
+							handleIf (iif, loopLabelMap);
 						} else if (elr is WhileDoWhileBase) {
-							WhileDoWhileBase whileDoWhileBase = (WhileDoWhileBase)elr;
-							ProgramSubgraph ps = processCodeBlock (whileDoWhileBase.codeBlock);
-							BranchBlock branchBlock = new BranchBlock (whileDoWhileBase.condition);
+							WhileDoWhileBase whileOrDoWhile = (WhileDoWhileBase)elr;
+							BranchBlock branchBlock = new BranchBlock (whileOrDoWhile.condition);
+							LoopRecord loopRecord = new LoopRecord (branchBlock);
+							//Put loop record in loopLabelMap, so it's visible when processing subblock
+							loopLabelMap.Add(whileOrDoWhile, loopRecord);
+							ProgramSubgraph ps = processCodeBlock (whileOrDoWhile.codeBlock, loopLabelMap);
+							//Now remove so it's no longer visible
+							loopLabelMap.Remove(whileOrDoWhile);
+							//loopRecord now has setters that need to be invoked when the exit
+							//node is set for this loop
 							ProgramNode initialNode;
 							if (ps == null) {
 								//if body is empty, then branch destination
@@ -278,7 +247,7 @@ namespace ProgramModel
 								//the only difference between while and
 								//do-while is the entry, either condition
 								//or block
-								if (whileDoWhileBase is While) {
+								if (whileOrDoWhile is While) {
 									initialNode = branchBlock;
 								} else if (elr is DoWhile) {
 									initialNode = ps.GetEntryPoint();
@@ -288,6 +257,9 @@ namespace ProgramModel
 							}
 							setNextProgramNode (initialNode, delegate(ProgramNode programNode) {
 								branchBlock.falseDest = programNode;
+								foreach (Action<ProgramNode> exitSetter in loopRecord.breakDestinationSetters) {
+									exitSetter.Invoke(programNode);
+								}
 							});
 						} else {
 							throw new InvalidOperationException ("Code block contains " + elr + ", but no handler for this type");
@@ -297,11 +269,15 @@ namespace ProgramModel
 			}
 		}
 
-		private static ProgramSubgraph processCodeBlock(CodeBlock<MutationT, ConditionT> cb)
+		private static ProgramSubgraph processCodeBlock(CodeBlock<MutationT, ConditionT> cb, Dictionary<Loop, LoopRecord> loopLabelMap)
 		{
 
+			//code that would theoretically go here moved to instance method of
+			//ProgramGraphBuilder, so that subroutining can be used
 			ProgramGraphBuilder pgb = new ProgramGraphBuilder ();
+			pgb.buildFromCodeBlock (cb, loopLabelMap);
 
+			//TODO: Convert current status of pgb to ProgramSubgraph
 			return null;
 		}
 
