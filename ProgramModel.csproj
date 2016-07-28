@@ -37,6 +37,7 @@
     <Compile Include="Loop.cs" />
     <Compile Include="TestMain.cs" />
     <Compile Include="StringReps.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Immutable">
