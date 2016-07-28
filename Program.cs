@@ -2,8 +2,6 @@
 
 namespace ProgramModel
 {
-	public interface Program
-	{
-	}
+	public interface Program<MutationT, ConditionT> {}
 }
 
