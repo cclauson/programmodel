@@ -42,10 +42,18 @@ namespace ProgramModel
 			innerDoWhileBody.addMutation ("mutation19");
 
 			Tuple<CodeBlock<String, String>, CodeBlock<String, String>> ifElseResult = innerDoWhileBody.addIfElse ("ifelsecond");
+			ifBody = ifElseResult.Item1;
+			ifBody.addMutation ("mutation22");
+			ifBody.addMutation ("mutation23");
+			ifBody.addContinue ();
+			ifBody.addMutation ("mutation24");
 
+			CodeBlock<String, String> elseBody = ifElseResult.Item2;
+			elseBody.addMutation ("mutation25");
+			elseBody.addMutation ("mutation26");
+			elseBody.addBreak (mywhile);
+			elseBody.addMutation ("mutation27");
 
-
-			innerDoWhileBody.addBreak (mywhile);
 			innerDoWhileBody.addMutation ("mutation20");
 			innerDoWhileBody.addMutation ("mutation21");
 
