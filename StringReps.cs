@@ -79,7 +79,7 @@ namespace ProgramModel
 							sb.Append ("do\n");
 							sb.Append (whileOrDoWhile.codeBlock.ToStringWithIndent (indentLevel + 1));
 							IndentToLevel (sb, indentLevel + 1);
-							sb.Append ("while (" + whileOrDoWhile.condition + ")\n");
+							sb.Append ("while (" + whileOrDoWhile.condition + ");\n");
 						} else {
 							Debug.Fail("WhileDoWhileBase object of unknown type: " + elr);
 						}
