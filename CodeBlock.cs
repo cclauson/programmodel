@@ -341,7 +341,7 @@ namespace ProgramModel
 
 			public IfElse(ConditionT condition, CodeBlock<MutationT, ConditionT> parent) : base(condition, parent)
 			{
-				this.elseCodeBlock = new CodeBlock<MutationT, ConditionT>();
+				this.elseCodeBlock = new CodeBlock<MutationT, ConditionT>(parent);
 			}
 		}
 
