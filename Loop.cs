@@ -18,4 +18,3 @@ namespace ProgramModel
 	/// </summary>
 	public interface Loop {}
 }
-
