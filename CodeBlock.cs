@@ -67,13 +67,13 @@ namespace ProgramModel
 		}
 
 		/// <summary>
-		/// Append an abstract assignment to the end of this CodeBlock.
+		/// Append an abstract mutation to the end of this CodeBlock.
 		/// </summary>
-		/// <param name="assignment">Assignment to append to the end of this CodeBlock.</param>
-		public void addAssignment(MutationT assignment)
+		/// <param name="mutation">Mutation to append to the end of this CodeBlock.</param>
+		public void addMutation(MutationT mutation)
 		{
 			contents.Add (Either<MutationT, CodeBlockNonAssignment>
-				.left<MutationT, CodeBlockNonAssignment>(assignment));
+				.left<MutationT, CodeBlockNonAssignment>(mutation));
 		}
 
 		private void addNonAssignment(CodeBlockNonAssignment nonAssignment)
@@ -154,7 +154,7 @@ namespace ProgramModel
 		/// <param name="labelName">A string denoting the loop, used only in debugging, otherwise meaningless</param>
 		public Tuple<CodeBlock<MutationT, ConditionT>, Loop> addWhile(ConditionT condition, String labelName)
 		{
-			While whiile = new While (condition, this);
+			While whiile = new While (condition, this, labelName);
 			addNonAssignment (whiile);
 			return new Tuple<CodeBlock<MutationT, ConditionT>, Loop> (whiile.codeBlock, whiile);
 		}
@@ -195,7 +195,7 @@ namespace ProgramModel
 		/// <param name="labelName">A string denoting the loop, used only in debugging, otherwise meaningless</param>
 		public Tuple<CodeBlock<MutationT, ConditionT>, Loop> addDoWhile(ConditionT condition, String labelName)
 		{
-			DoWhile doWhile = new DoWhile (condition, this);
+			DoWhile doWhile = new DoWhile (condition, this, labelName);
 			addNonAssignment (doWhile);
 			return new Tuple<CodeBlock<MutationT, ConditionT>, Loop> (doWhile.codeBlock, doWhile);
 		}
