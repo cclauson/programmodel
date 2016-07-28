@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Diagnostics;
 
 namespace ProgramModel
 {
@@ -64,15 +65,25 @@ namespace ProgramModel
 						If iif = (If) elr;
 						sb.Append ("if (" + iif.condition + ")\n");
 						sb.Append(iif.codeBlock.ToStringWithIndent(indentLevel + 1));
-					} else if (elr is While) {
-						While whiile = (While) elr;
-						sb.Append ("while (" + whiile.condition + ")\n");
-						sb.Append(whiile.codeBlock.ToStringWithIndent(indentLevel + 1));
-					} else if (elr is DoWhile) {
-						DoWhile doWhile = (DoWhile) elr;
-						sb.Append ("do\n");
-						sb.Append(doWhile.codeBlock.ToStringWithIndent(indentLevel + 1));
-						sb.Append ("while (" + doWhile.condition + ")\n");
+					} else if (elr is WhileDoWhileBase) {
+						WhileDoWhileBase whileOrDoWhile = (WhileDoWhileBase) elr;
+						if (whileOrDoWhile.label != null) {
+							sb.Append (whileOrDoWhile.label + ":\n");
+							IndentToLevel (sb, indentLevel + 1);
+						}
+						String labelString = (whileOrDoWhile.label == null) ? "" : whileOrDoWhile.label + ":\n";
+						if (elr is While) {
+							sb.Append ("while (" + whileOrDoWhile.condition + ")\n");
+							sb.Append (whileOrDoWhile.codeBlock.ToStringWithIndent (indentLevel + 1));
+						} else if (elr is DoWhile) {
+							sb.Append ("do\n");
+							sb.Append (whileOrDoWhile.codeBlock.ToStringWithIndent (indentLevel + 1));
+							IndentToLevel (sb, indentLevel + 1);
+							sb.Append ("while (" + whileOrDoWhile.condition + ")\n");
+						} else {
+							Debug.Fail("WhileDoWhileBase object of unknown type: " + elr);
+						}
+
 					} else {
 						throw new InvalidOperationException ("Code block contains " + elr + ", but no handler for this type");
 					}
@@ -84,6 +95,7 @@ namespace ProgramModel
 			sb.Append ("}\n");
 
 			return sb.ToString ();
+
 		}
 
 		public override string ToString()
