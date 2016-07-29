@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Text;
 
 namespace ProgramModel
 {
@@ -25,7 +26,6 @@ namespace ProgramModel
 				this.assignments = new List<MutationT>();
 				this.coda = null;
 			}
-
 		}
 
 		private class BranchBlock : ProgramNode
