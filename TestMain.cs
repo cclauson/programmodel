@@ -65,8 +65,10 @@ namespace ProgramModel
 			codeBlock.addMutation ("mutation16");
 
 			System.Console.WriteLine (codeBlock);
-
-			codeBlock.ToProgram ();
+			System.Console.WriteLine ();
+			System.Console.WriteLine ("********************************************");
+			System.Console.WriteLine ();
+			System.Console.WriteLine (codeBlock.ToProgram ().ToString());
 
 		}
 
