@@ -103,5 +103,16 @@ namespace ProgramModel
 			return ToStringWithIndent(0);
 		}
 
+		private partial class ProgramImpl : Program<MutationT, ConditionT>
+		{
+
+			public override string ToString()
+			{
+				return "Program as string";
+			}
+
+		}
+
+
 	}
 }
