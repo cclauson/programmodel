@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace ProgramModel
 {
@@ -83,7 +84,6 @@ namespace ProgramModel
 						} else {
 							Debug.Fail("WhileDoWhileBase object of unknown type: " + elr);
 						}
-
 					} else {
 						throw new InvalidOperationException ("Code block contains " + elr + ", but no handler for this type");
 					}
@@ -103,12 +103,108 @@ namespace ProgramModel
 			return ToStringWithIndent(0);
 		}
 
+
+
 		private partial class ProgramImpl : Program<MutationT, ConditionT>
 		{
 
+			//type for keeping track of symbolic references
+			//for program nodes.
+			//Each program node needs a "name" that can be
+			//used to refer to it, here we name nodes and
+			//keep track of the names we've assigned
+			private class ProgramNodeReferencer
+			{
+				private readonly Dictionary<ProgramNode, int> dict = new Dictionary<ProgramNode, int> ();
+				private int currNum = 0;
+
+				public String nameForProgramNode(ProgramNode programNode)
+				{
+					if (programNode is ProgramReturn) {
+						return "RETURN";
+					}
+					if (!dict.ContainsKey(programNode)) {
+						dict[programNode] = currNum;
+						++currNum;
+					}
+					return dict [programNode].ToString();
+				}
+			}
+
+			//print a representation of the program node to the
+			//string builder, and return a list of the child nodes
+			private IList<ProgramNode> printProgramNode(
+				ProgramNode programNode, StringBuilder sb, ProgramNodeReferencer pnr)
+			{
+				Debug.Assert (!(programNode is ProgramReturn),
+					"we should never be trying to print a ProgramReturn node");
+
+				String nodeName = pnr.nameForProgramNode (programNode);
+				IList<ProgramNode> ret = new List<ProgramNode> ();
+				if (programNode is BasicBlock) {
+					BasicBlock basicBlock = (BasicBlock) programNode;
+					if (basicBlock.coda == null)
+						throw new Exception ("Basic block coda is null");
+					sb.Append("===== " + nodeName + ": BASIC BLOCK ======\n");
+					foreach(MutationT mutation in basicBlock.assignments) {
+						sb.Append ("  " + mutation + "\n");
+					}
+					sb.Append(" GOTO: " + pnr.nameForProgramNode(basicBlock.coda));
+					ret.Add (basicBlock.coda);
+				} else if (programNode is BranchBlock) {
+					BranchBlock branchBlock = (BranchBlock) programNode;
+					if (branchBlock.trueDest == null)
+						throw new Exception ("Branch block truedest is null");
+					if (branchBlock.falseDest == null)
+						throw new Exception ("Branch block falsedest is null");
+					sb.Append("===== " + nodeName + ": BRANCH BLOCK =====\n");
+					sb.Append (" CONDITION: " + branchBlock.condition + "\n");
+					sb.Append (" TRUE  DEST: " + pnr.nameForProgramNode (branchBlock.trueDest));
+					sb.Append (" FALSE DEST: " + pnr.nameForProgramNode (branchBlock.falseDest));
+					ret.Add (branchBlock.trueDest);
+					ret.Add (branchBlock.falseDest);
+				} else {
+					Debug.Fail("Unknown subtype of ProgramNode: " + programNode);
+					return null; //shouldn't get here
+				}
+				return ret;
+			}
+
 			public override string ToString()
 			{
-				return "Program as string";
+				ProgramNodeReferencer pnr = new ProgramNodeReferencer ();
+				//this doesn't have to be a stack, it could be a queue, or
+				//actually almost any collection, it would just cause the graph
+				//to be traversed in a different order
+				Stack<ProgramNode> stack = new Stack<ProgramNode> ();
+				HashSet<ProgramNode> queuedToPrint = new HashSet<ProgramNode> ();
+
+				if (this.initialBlock is ProgramReturn) {
+					return "(EMPTY PROGRAM GRAPH)";
+				}
+
+				StringBuilder sb = new StringBuilder ();
+
+				stack.Push (this.initialBlock);
+				queuedToPrint.Add (this.initialBlock);
+
+				while (stack.Count != 0) {
+					ProgramNode programNode = stack.Pop ();
+					IList<ProgramNode> children = printProgramNode (programNode, sb, pnr);
+					foreach (ProgramNode child in children) {
+						if (child is ProgramReturn)
+							continue;
+						if (queuedToPrint.Contains(child))
+							continue;
+						if (child == null)
+							throw new Exception ("Unexpected null child");
+						queuedToPrint.Add (child);
+						stack.Push (child);
+					}
+				}
+
+				return sb.ToString ();
+
 			}
 
 		}
