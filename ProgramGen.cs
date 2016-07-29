@@ -41,7 +41,7 @@ namespace ProgramModel
 			}
 		}
 
-		private class ProgramImpl : Program<MutationT, ConditionT>
+		private partial class ProgramImpl : Program<MutationT, ConditionT>
 		{
 			private ProgramNode initialBlock;
 
