@@ -120,6 +120,9 @@ namespace ProgramModel
 
 				public String nameForProgramNode(ProgramNode programNode)
 				{
+					if (programNode == null) {
+						throw new ArgumentNullException("programNode is null");
+					}
 					if (programNode is ProgramReturn) {
 						return "RETURN";
 					}
@@ -143,29 +146,22 @@ namespace ProgramModel
 				IList<ProgramNode> ret = new List<ProgramNode> ();
 				if (programNode is BasicBlock) {
 					BasicBlock basicBlock = (BasicBlock) programNode;
-					if (basicBlock.coda == null)
-						throw new Exception ("Basic block coda is null");
 					sb.Append("===== " + nodeName + ": BASIC BLOCK ======\n");
 					foreach(MutationT mutation in basicBlock.assignments) {
 						sb.Append ("  " + mutation + "\n");
 					}
-					sb.Append(" GOTO: " + pnr.nameForProgramNode(basicBlock.coda));
+					sb.Append(" GOTO: " + pnr.nameForProgramNode(basicBlock.coda) + "\n");
 					ret.Add (basicBlock.coda);
 				} else if (programNode is BranchBlock) {
 					BranchBlock branchBlock = (BranchBlock) programNode;
-					if (branchBlock.trueDest == null)
-						throw new Exception ("Branch block truedest is null");
-					if (branchBlock.falseDest == null)
-						throw new Exception ("Branch block falsedest is null");
 					sb.Append("===== " + nodeName + ": BRANCH BLOCK =====\n");
 					sb.Append (" CONDITION: " + branchBlock.condition + "\n");
-					sb.Append (" TRUE  DEST: " + pnr.nameForProgramNode (branchBlock.trueDest));
-					sb.Append (" FALSE DEST: " + pnr.nameForProgramNode (branchBlock.falseDest));
+					sb.Append (" TRUE  DEST: " + pnr.nameForProgramNode (branchBlock.trueDest) + "\n");
+					sb.Append (" FALSE DEST: " + pnr.nameForProgramNode (branchBlock.falseDest) + "\n");
 					ret.Add (branchBlock.trueDest);
 					ret.Add (branchBlock.falseDest);
 				} else {
-					Debug.Fail("Unknown subtype of ProgramNode: " + programNode);
-					return null; //shouldn't get here
+					throw new Exception ("Unknown subtype of ProgramNode: " + programNode);
 				}
 				return ret;
 			}
@@ -192,12 +188,12 @@ namespace ProgramModel
 					ProgramNode programNode = stack.Pop ();
 					IList<ProgramNode> children = printProgramNode (programNode, sb, pnr);
 					foreach (ProgramNode child in children) {
+						if (child == null)
+							continue;
 						if (child is ProgramReturn)
 							continue;
 						if (queuedToPrint.Contains(child))
 							continue;
-						if (child == null)
-							throw new Exception ("Unexpected null child");
 						queuedToPrint.Add (child);
 						stack.Push (child);
 					}

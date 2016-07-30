@@ -163,6 +163,12 @@ namespace ProgramModel
 							bb = new BasicBlock();
 							if (initial == null) {
 								initial = bb;
+							} else {
+								if (setNextNode == null) {
+									throw new Exception ("Sanity check failure: " +
+										"initial not null and bb null, this implies setNextNode not null, but it is...");
+								}
+								setNextNode (bb);
 							}
 							setNextNode = null;
 						}
